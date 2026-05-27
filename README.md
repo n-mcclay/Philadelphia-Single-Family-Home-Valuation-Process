@@ -1,0 +1,31 @@
+# Understanding Philadelphia Single-Family Home Valuation
+
+Every house in Philadelphia exists twice. Once as a physical structure with bricks, square footage, a roof condition, a year built. And once as a row in an administrative database with an assessed value, a market value, a parcel number, a zone code. The translation between these two existences happens through a mass appraisal model the city runs every few years. That translation has consequences: it determines tax bills, shapes neighborhood investment, sets the terms of appeals, and decides which properties get attention from the city when something goes wrong.
+This project investigates how Philadelphia performs that translation, where it fails, and what those failures reveal about the relationship between physical neighborhoods and the digital systems that govern them. Some houses get translated cleanly. Others get translated badly. Particularly, homes effected by poor translation are concentrated in specific neighborhoods, price ranges, property types. The pattern of who gets translated badly is not random, and it is not purely about poverty. It is about the structure of the comparison sets the model uses, the quality of the underlying records, and the political-administrative decisions about when to refresh both.
+The work in this repository sits at the intersection of urban form, public administration, and data infrastructure. It treats the assessment system not as a black box producing numbers but as a sociotechnical artifact. It is a digital representation of a built environment, produced under institutional constraints, with real consequences for how communities are taxed and treated. Understanding how it works (and fails) is a precondition for any serious conversation about economic development, neighborhood equity, or political accountability in cities that depend on property taxes.
+
+## What this repository contains
+
+The repository is one sustained investigation broken into pieces that can be read independently. There are three layers.
+The **analysis scripts**  in analysis/ are the empirical core. Six numbered files, each addressing one question. The first builds a clean transaction panel from raw OPA assessment data and Real Estate Transfer records, 2014–2025. The next five each take that panel as input and investigate a specific question: how citywide assessment quality has evolved, what the data-quality flags actually capture, whether within-neighborhood price heterogeneity predicts regressivity, whether adjacent geographies co-vary in their assessment errors, and how the 2023 reassessment changed the information environment of administrative valuations.
+
+The **notes** in notes/ are the reflective layer. Six pieces of writing, each tied to a real intellectual move the project required. Some are methodological — how I decided what counts as a valid sale, how I chose between census tracts and the city's own assessor-defined geographies, what each dispersion measure actually tells you. One of them, 03_the_circular_flag.md, walks through a methodological problem I introduced in an earlier version of this work and later had to diagnose and correct. That note is, in some ways, the most important file in the repository: it shows what the inquiry actually looked like from the inside, including the parts that did not work the first time.
+
+The **papers** in papers/ are two formal write-ups produced from the inquiry. The first, on valuation uncertainty and the 2023 reassessment, treats the assessor's translation problem as a measurement question and asks whether institutional intervention changed the reliability of the system's output. The second, on within-neighborhood price heterogeneity and outlier concentration, treats it as a mechanism question and asks why some neighborhoods get translated badly. The two papers ask different questions, use different units of analysis, and reach different kinds of conclusions; together they trace the arc of what I learned by trying to understand a single municipal system from multiple angles.
+
+## How to read this repository
+
+If you want the punchline: read this README, then look at the figures in figures/ and skim the notes that catch your interest.
+If you want to see how I think about a problem: start with notes/01_what_this_project_is.md, then read the notes in numerical order. They are written to be read by someone who has never touched property assessment data before.
+If you want to reproduce numbers in the papers: clone the repository, install dependencies from renv.lock, and run the scripts in analysis/ in order. The processed analytical files are included in data/processed/, so scripts 02–06 will run without you needing to download the raw OPA and RTT files. Only 01_build_master_panel.R requires the raw data, and data/raw_data_sources.md documents exactly where to find them.
+If you want to read the formal write-ups: the two PDFs in papers/ are self-contained.
+
+## A note on what this project is not
+
+This is not a finished research program. It is the work of an early-career analyst learning to investigate a complex administrative system using public data and standard econometric tools. Two papers exist; one was submitted for a graduate public economics course, and the other is currently being prepared. Both contain limitations I have tried to document honestly. Neither makes welfare, equity, or causal claims beyond what their identification strategies can support.
+What the project does offer is a working example of how one investigator approached a hard, slow problem: starting from public data, iterating through analytical choices, reading the relevant literature, building tools that other people could reuse, finding errors in earlier work, and producing artifacts at multiple levels of formality. If you are interested in how the built environment gets translated into the digital records that govern it — and what goes wrong in that translation — I hope you find something useful here.
+
+## About
+Nathan McClay | Villanova University '26 | Economics, Political Science, Philosophy
+-------------------------------------------------------------------------------------
+Interested in learning more, found an error? Feel free to reach out to me at nathan.mcclay@gmail.com 
