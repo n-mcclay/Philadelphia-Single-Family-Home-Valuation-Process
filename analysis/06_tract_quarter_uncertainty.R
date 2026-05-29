@@ -107,9 +107,9 @@ message("\nFitting hedonic regression")
 
 hedonic <- feols(
   log_sp ~ log_area + number_of_bedrooms + number_of_bathrooms +
-           number_stories + age + age2 +
-           i(exterior_condition) + i(interior_condition) +
-           i(quality_grade) + i(data_period)
+    number_stories + age + age2 +
+    i(exterior_condition) + i(interior_condition) +
+    i(quality_grade) + i(data_period)
   | year_quarter + census_tract,
   data = hed_sample
 )
@@ -275,9 +275,9 @@ its_data <- tract_quarter %>%
 
 its_fit <- feols(
   iqr_res ~ time +
-            post_2019 + time_since_2019 +
-            post_2023 + time_since_2023 +
-            post_2025 + time_since_2025
+    post_2019 + time_since_2019 +
+    post_2023 + time_since_2023 +
+    post_2025 + time_since_2025
   | census_tract,
   data    = its_data,
   cluster = ~ census_tract + year_quarter
@@ -295,6 +295,87 @@ print(its_table)
 
 write_csv(its_table,
           here::here("data", "processed", "its_results.csv"))
+
+
+# ----------------------------------------------------------------------------
+# VCOV diagnostic: SEs across four specifications
+# ----------------------------------------------------------------------------
+#
+# Under two-way clustering, the post_2025 coefficient has a t-statistic of
+# about -10.5, dramatically larger than under tract-only clustering (-3.24).
+# fixest also reports that the VCOV matrix was not positive semi-definite
+# and had to be 'fixed'. Both are symptoms of a known pathology of the
+# Cameron-Gelbach-Miller two-way cluster estimator.
+#
+# The mechanism: post_2025 is constant within every year_quarter cluster
+# (it equals 0 for all observations in pre-2025 quarters and 1 for all
+# observations in post-2025 quarters). With no within-quarter variation
+# in the regressor, the year_quarter contribution to its variance is
+# structurally degenerate. The CGM formula subtracts an "intersection"
+# correction that, in this case, exceeds the year_quarter contribution,
+# producing a variance smaller than tract-only clustering would give.
+#
+# The same issue applies to post_2019 and post_2023 in principle, but
+# they are identified off many more "1" quarters (32 and 12 respectively),
+# so the degeneracy is mild. With only 4 post-2025 quarters, the problem
+# is severe.
+#
+# To confirm and quantify, we compute SEs four ways: HC1 (no clustering),
+# tract-only, quarter-only, and two-way. If quarter-only gives an
+# implausibly small SE on post_2025, the diagnosis is confirmed.
+
+message("\nVCOV diagnostic across SE specifications")
+
+vcov_specs <- list(
+  hc1        = summary(its_fit, vcov = "hetero"),
+  tract_only = summary(its_fit, cluster = ~ census_tract),
+  quarter_only = summary(its_fit, cluster = ~ year_quarter),
+  two_way    = summary(its_fit, cluster = ~ census_tract + year_quarter)
+)
+
+vcov_comparison <- bind_rows(lapply(names(vcov_specs), function(nm) {
+  s  <- vcov_specs[[nm]]
+  tibble(
+    spec     = nm,
+    term     = names(coef(its_fit)),
+    estimate = unname(coef(its_fit)),
+    se       = unname(s$se)
+  )
+})) %>%
+  pivot_wider(names_from = spec, values_from = se,
+              names_prefix = "se_")
+
+print(vcov_comparison)
+
+write_csv(vcov_comparison,
+          here::here("data", "processed", "its_vcov_diagnostic.csv"))
+
+# Recommended SE per coefficient: two-way clustering for coefficients where
+# it behaves well (monotonic increase from tract-only), tract-only for the
+# 2025 coefficients where the quarter dimension is degenerate.
+its_recommended <- vcov_comparison %>%
+  mutate(
+    recommended_se_method = ifelse(
+      grepl("2025", term),
+      "tract_only",
+      "two_way"
+    ),
+    recommended_se = ifelse(
+      recommended_se_method == "tract_only",
+      se_tract_only,
+      se_two_way
+    ),
+    t_statistic    = estimate / recommended_se,
+    p_value        = 2 * pt(-abs(t_statistic),
+                            df = length(unique(its_data$census_tract)) - 1)
+  ) %>%
+  select(term, estimate, recommended_se_method, recommended_se,
+         t_statistic, p_value)
+
+print(its_recommended)
+
+write_csv(its_recommended,
+          here::here("data", "processed", "its_recommended_inference.csv"))
 
 
 # ----------------------------------------------------------------------------
