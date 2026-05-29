@@ -107,9 +107,9 @@ message("\nFitting hedonic regression")
 
 hedonic <- feols(
   log_sp ~ log_area + number_of_bedrooms + number_of_bathrooms +
-    number_stories + age + age2 +
-    i(exterior_condition) + i(interior_condition) +
-    i(quality_grade) + i(data_period)
+           number_stories + age + age2 +
+           i(exterior_condition) + i(interior_condition) +
+           i(quality_grade) + i(data_period)
   | year_quarter + census_tract,
   data = hed_sample
 )
@@ -232,7 +232,25 @@ message("\n  Wrote figures/fig_10_tract_quarter_trajectory.pdf")
 #                     + tract_FE + epsilon
 #
 # Each break adds a level shift (beta_post) and a slope change
-# (beta_post*time_since). Standard errors clustered at the tract level.
+# (beta_post*time_since).
+#
+# Standard errors: two-way clustered, by census_tract AND by year_quarter.
+#   - Clustering by census_tract handles arbitrary temporal correlation within
+#     each tract's time series (the standard panel-data concern).
+#   - Clustering by year_quarter handles arbitrary spatial correlation across
+#     tracts within the same quarter. This is motivated by analysis/05, which
+#     documented substantial spatial autocorrelation among GMAs (SAR rho =
+#     0.339); the same dynamics almost certainly produce spatial structure
+#     among tracts. Single-dimension clustering on tract alone, our original
+#     choice, was inconsistent with what analysis/05 had already shown about
+#     this data. The two-way version brings analysis/06's inferential
+#     standard up to where analysis/05 had set it.
+#
+# Two-way clustering is a non-parametric correction: it does not model the
+# spatial structure, only acknowledges it. A fully spatial-panel estimator
+# (e.g., spatial Durbin or splm::spml) would do more, but at substantially
+# greater methodological cost and modest substantive payoff given how large
+# the t-statistics here already are. See notes/06 for further discussion.
 
 message("\nFitting three-break ITS")
 
@@ -257,12 +275,12 @@ its_data <- tract_quarter %>%
 
 its_fit <- feols(
   iqr_res ~ time +
-    post_2019 + time_since_2019 +
-    post_2023 + time_since_2023 +
-    post_2025 + time_since_2025
+            post_2019 + time_since_2019 +
+            post_2023 + time_since_2023 +
+            post_2025 + time_since_2025
   | census_tract,
   data    = its_data,
-  cluster = ~ census_tract
+  cluster = ~ census_tract + year_quarter
 )
 
 print(summary(its_fit))
@@ -322,7 +340,7 @@ fig11 <- ggplot(agg_predicted, aes(year_quarter)) +
     x        = NULL,
     y        = "IQR of log(sale price) residuals",
     caption  = paste0("Source: Author's analysis. ITS fit at the tract-quarter level with tract FE ",
-                      "and tract-clustered standard errors.\n",
+                      "and two-way clustered standard errors (tract \u00d7 year-quarter).\n",
                       "Breaks at 2019Q1, 2023Q1, and 2025Q1 correspond to reassessment effective dates.")
   ) +
   theme_project() +
