@@ -1,0 +1,6 @@
+flag,fire_rate,n_fires
+bad_sqft_flag,0.29300844481213806,75084
+bad_year_built_flag,0.29298112795217207,75077
+round_price_flag,0.07490673243525904,19195
+room_logic_flag,0.05202300860090848,13331
+fmv_identity_flag,7.80481713313457e-6,2
